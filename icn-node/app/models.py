@@ -7,7 +7,6 @@ from sqlalchemy import (
     JSON,
     Date,
     DateTime,
-    Enum,
     Float,
     ForeignKey,
     Index,
@@ -29,7 +28,7 @@ class Org(Base):
     urn: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     public_key: Mapped[str] = mapped_column(String(512), nullable=False)
-    metadata: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    org_metadata: Mapped[dict] = mapped_column("metadata", JSON, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -45,13 +44,6 @@ class Org(Base):
     )
 
 
-class InvoiceStatusEnum(str, Enum):  # type: ignore[misc]
-    proposed = "proposed"
-    accepted = "accepted"
-    disputed = "disputed"
-    settled = "settled"
-
-
 class Invoice(Base):
     __tablename__ = "invoices"
 
@@ -64,7 +56,7 @@ class Invoice(Base):
     lines: Mapped[dict] = mapped_column(JSON, default=list, nullable=False)
     total: Mapped[float] = mapped_column(Float, nullable=False)
     terms: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
-    status: Mapped[str] = mapped_column(String(32), default=InvoiceStatusEnum.proposed, index=True)
+    status: Mapped[str] = mapped_column(String(32), default="proposed", index=True)
     status_history: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     signatures: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
 

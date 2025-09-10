@@ -15,7 +15,7 @@ def get_database_url() -> str:
     """Return DATABASE_URL or a sensible default for local dev."""
     return os.getenv(
         "DATABASE_URL",
-        "postgresql+asyncpg://icn:icn_dev@localhost:5432/icn_node",
+        "postgresql+asyncpg://icn:icn_dev@localhost:5433/icn_node",
     )
 
 

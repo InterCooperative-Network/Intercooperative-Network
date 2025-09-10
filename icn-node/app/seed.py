@@ -25,7 +25,7 @@ async def seed_orgs(session: AsyncSession) -> None:
         if exists:
             continue
         pub, priv = generate_keypair()
-        org = Org(urn=urn, name=name, public_key=pub, metadata={"demo": True})
+        org = Org(urn=urn, name=name, public_key=pub, org_metadata={"demo": True})
         session.add(org)
         demo_keys[urn] = {"public_key": pub, "private_key": priv}
     await session.commit()
