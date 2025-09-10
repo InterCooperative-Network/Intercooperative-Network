@@ -12,11 +12,17 @@ async def health():
 # Wiring
 from .middleware.signatures import SignatureVerificationMiddleware
 from .routers.invoices import router as invoices_router
+from .routers.attestations import router as attestations_router
+from .routers.trust import router as trust_router
+from .routers.checkpoints import router as checkpoints_router
 from .db import get_session
 from .models import AuditLog
 
 app.add_middleware(SignatureVerificationMiddleware)
 app.include_router(invoices_router)
+app.include_router(attestations_router)
+app.include_router(trust_router)
+app.include_router(checkpoints_router)
 
 
 @app.get("/debug/audit-log")

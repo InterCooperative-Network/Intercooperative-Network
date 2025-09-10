@@ -21,7 +21,7 @@ class SignatureVerificationMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app, exempt_paths: set[str] | None = None):
         super().__init__(app)
-        self.exempt_paths = exempt_paths or {"/health", "/docs", "/openapi.json", "/debug/audit-log"}
+        self.exempt_paths = exempt_paths or {"/health", "/docs", "/openapi.json", "/debug/audit-log", "/checkpoints/generate"}
 
     async def dispatch(self, request: Request, call_next: Callable):
         if request.method in {"POST", "PATCH"} and request.url.path not in self.exempt_paths:

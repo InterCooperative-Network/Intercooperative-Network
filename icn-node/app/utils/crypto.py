@@ -59,3 +59,23 @@ def verify_signature(data: Any, signature_b64: str, public_key_b64: str) -> bool
         return False
 
 
+def merkle_root(leaves: list[str]) -> str:
+    """Compute a simple binary Merkle root from hex-encoded leaf hashes.
+    If odd number of nodes at a level, promote the last one.
+    Returns hex string; empty string for no leaves.
+    """
+    if not leaves:
+        return ""
+    level = leaves[:]
+    while len(level) > 1:
+        next_level: list[str] = []
+        for i in range(0, len(level), 2):
+            if i + 1 < len(level):
+                combined = (level[i] + level[i + 1]).encode("utf-8")
+                next_level.append(sha256_hex(combined))
+            else:
+                next_level.append(level[i])
+        level = next_level
+    return level[0]
+
+
