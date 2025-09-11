@@ -1,4 +1,16 @@
 
+"""
+FastAPI application entry point for the ICN Node (Weekend MVP).
+
+Responsibilities
+- Registers the signature verification middleware for POST/PATCH writes
+- Wires core routers: invoices, attestations, trust, checkpoints
+- Exposes a debug endpoint for verifying audit-chain continuity
+
+Notes
+- Signature middleware enforces `X-Key-Id` (org URN) and `X-Signature` (Ed25519)
+- `POST /checkpoints/generate` is exempted for local demo convenience
+"""
 from fastapi import FastAPI, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

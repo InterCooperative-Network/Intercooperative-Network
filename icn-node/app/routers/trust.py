@@ -15,6 +15,10 @@ router = APIRouter(prefix="/trust", tags=["trust"])
 
 
 def time_decay(ts: datetime, half_life_days: int = 180) -> float:
+    """Half-life decay so recent interactions count more.
+
+    Using an exponential decay: w = 0.5 ** (days / half_life)
+    """
     now = datetime.now(timezone.utc)
     days = (now - (ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc))).days
     return 0.5 ** (days / half_life_days)

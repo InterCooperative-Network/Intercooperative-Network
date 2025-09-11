@@ -16,7 +16,9 @@ router = APIRouter(prefix="/checkpoints", tags=["checkpoints"])
 
 
 def _leaf_from_audit(a: AuditLog) -> str:
-    # Deterministic leaf per PRD: sha256(prev_hash || row_hash || op_type || entity_type || entity_id || payload_hash || timestamp)
+    """Deterministic leaf (PRD §11):
+    sha256(prev_hash || row_hash || op_type || entity_type || entity_id || payload_hash || timestamp)
+    """
     prev = (a.prev_hash or "")
     row = a.row_hash or ""
     ts = a.timestamp.isoformat()
