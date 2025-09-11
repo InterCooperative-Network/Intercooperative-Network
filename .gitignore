@@ -1,0 +1,55 @@
+# General
+*.log
+*.pid
+.DS_Store
+.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+build/
+dist/
+
+# Virtual envs
+venv/
+.venv/
+env/
+
+# Environment / secrets
+.env
+.env.*
+*.env
+*.local
+
+# Editors/IDE
+.vscode/
+.idea/
+*.swp
+
+# Node/Web (future)
+node_modules/
+.pnpm-store/
+.npm/
+.turbo/
+.next/
+.out/
+.vite/
+coverage/
+icn-web/node_modules/
+icn-web/dist/
+icn-web/build/
+
+# Project-specific
+uvicorn.log
+uvicorn.pid
+icn-node/demo_keys.json
+icn-node/venv/
+
