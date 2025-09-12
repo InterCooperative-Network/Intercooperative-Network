@@ -45,7 +45,18 @@ POST /checkpoints/generate?date=YYYY-MM-DD
 GET /checkpoints/{date}/verify
 - 200: {ok, merkle_root, count}
 
+GET /checkpoints/artifacts/{date}
+- 200: {date, merkle_root, count, head_hash, prev_head_hash}
+
+## Orgs
+
+GET /orgs
+- 200: {items: [{org_id, display_name, pubkey}]}
+
+GET /orgs/{org_id}
+- 200: {org_id, display_name, pubkey, metadata, created_at}
+
 ## Debug
 
 GET /debug/audit-log
-- 200: {count, chain_ok, head}
+- 200: {count, chain_ok, head, last_rows, continuity}

@@ -37,6 +37,7 @@ from .routers.invoices import router as invoices_router
 from .routers.attestations import router as attestations_router
 from .routers.trust import router as trust_router
 from .routers.checkpoints import router as checkpoints_router
+from .routers.orgs import router as orgs_router
 from .db import get_session
 from .models import AuditLog, Invoice, Attestation
 from .utils.crypto import canonicalize_json
@@ -46,6 +47,7 @@ app.include_router(invoices_router)
 app.include_router(attestations_router)
 app.include_router(trust_router)
 app.include_router(checkpoints_router)
+app.include_router(orgs_router)
 
 @app.get("/env/demo")
 async def env_demo():

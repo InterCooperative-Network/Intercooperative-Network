@@ -21,8 +21,13 @@ Narrative: "Integrity-first rails for inter-coop trade"
 
 6) Generate daily checkpoint and verify
    - Demonstrates merkle root over audit rows and continuity
+   - Shows artifact written to `.demo/checkpoints/<DATE>.json` and mirror verification (`make mirror-verify DATE=<DATE>`)
 
 7) Open the mini web viewer
+- Bonus: export for finance
+  - Run `make export-qb` to produce QuickBooks-style journal JSON
+- Bonus: browse org directory
+  - `http :8000/orgs` to list seeded orgs and pubkeys
    - `make web` then open the localhost URL
    - Use the five buttons to repeat the flow and copy curl commands
 

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date as Date, datetime, timezone
 from typing import Any
+from pathlib import Path
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, select
@@ -63,6 +65,20 @@ async def generate_checkpoint(
     )
     session.add(cp)
     await session.commit()
+    # Write mirrorable artifact
+    # Determine head and previous head hash from audit chain
+    head = rows[-1].row_hash if rows else None
+    prev_head = rows[-2].row_hash if len(rows) > 1 else None
+    artifact = {
+        "date": date,
+        "merkle_root": root,
+        "count": len(rows),
+        "head_hash": head,
+        "prev_head_hash": prev_head,
+    }
+    out_dir = Path(".demo/checkpoints")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{date}.json").write_text(json.dumps(artifact, indent=2))
     return {"date": date, "operations_count": len(rows), "merkle_root": root}
 
 
@@ -93,5 +109,13 @@ async def verify_checkpoint(
     root = merkle_root(leaves)
     ok = (root or "") == (cp.merkle_root or "")
     return {"ok": ok, "merkle_root": cp.merkle_root, "count": len(rows)}
+
+
+@router.get("/artifacts/{date}")
+async def get_checkpoint_artifact(date: str):
+    p = Path(".demo/checkpoints") / f"{date}.json"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    return json.loads(p.read_text())
 
 

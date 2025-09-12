@@ -24,4 +24,10 @@ test:
 web:
 	cd icn-web && npm install && npm run dev -- --host | cat
 
+export-qb:
+	python3 scripts/export_quickbooks.py
+
+mirror-verify:
+	python3 scripts/mirror_pull_and_verify.py $${DEMO_BASE_URL:-http://localhost:8000} $${DATE}
+
 

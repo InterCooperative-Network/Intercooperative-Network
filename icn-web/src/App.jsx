@@ -53,6 +53,8 @@ export default function App() {
   const [invoices, setInvoices] = useState([])
   const [trust, setTrust] = useState(null)
   const [checkpointResult, setCheckpointResult] = useState(null)
+  const [activeTab, setActiveTab] = useState('actions')
+  const [disputes, setDisputes] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [copyCurl, setCopyCurl] = useState('')
@@ -202,6 +204,25 @@ export default function App() {
     }
   }
 
+  async function fetchDisputes(invoiceId) {
+    setError('')
+    setLoading(true)
+    try {
+      if (mode === 'demo') {
+        setDisputes([{ by: 'urn:coop:demo-a', reason: 'Demo dispute', ts: new Date().toISOString() }])
+      } else {
+        const res = await fetch(`${apiBase}/invoices/${invoiceId}/disputes`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        setDisputes(data.items || [])
+      }
+    } catch (e) {
+      setError(String(e.message || e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="container">
       <header>
@@ -222,7 +243,12 @@ export default function App() {
       {error ? <div style={{ color:'#fda4af' }}>{error}</div> : null}
       {loading ? <div>Loading…</div> : null}
 
-      <main>
+      <nav style={{ margin: '12px 0' }}>
+        <button onClick={() => setActiveTab('actions')} disabled={activeTab==='actions'}>Actions</button>
+        <button onClick={() => setActiveTab('disputes')} disabled={activeTab==='disputes'} style={{ marginLeft: 8 }}>Disputes</button>
+      </nav>
+
+      <main style={{ display: activeTab==='actions' ? 'block' : 'none' }}>
         <Section title="Create Invoice">
           <div className="row">
             <LabelInput label="From Org" value={fromOrg} onChange={setFromOrg} placeholder="urn:coop:demo-a" />
@@ -296,6 +322,20 @@ export default function App() {
 
         <Section title="Copy curl for last action">
           <pre style={{ whiteSpace: 'pre-wrap' }}>{copyCurl}</pre>
+        </Section>
+      </main>
+
+      <main style={{ display: activeTab==='disputes' ? 'block' : 'none' }}>
+        <Section title="Disputes">
+          <div className="row">
+            <LabelInput label="Invoice ID" value={fromOrg} onChange={setFromOrg} placeholder="1" />
+            <button style={{ marginLeft: 8 }} onClick={() => fetchDisputes(prompt('Invoice ID to view disputes','1') || '1')}>Load</button>
+          </div>
+          <ul className="list" style={{ marginTop: 8 }}>
+            {disputes.map((d, i) => (
+              <li key={i}><b>{d.ts}</b> — {d.by}: {d.reason}</li>
+            ))}
+          </ul>
         </Section>
       </main>
 

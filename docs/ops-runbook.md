@@ -13,6 +13,16 @@
 - GET /debug/audit-log (chain_ok should be true)
 - POST /checkpoints/generate?date=YYYY-MM-DD and then verify
 
+## Mirroring checkpoints
+- Generator writes artifact to `.demo/checkpoints/<DATE>.json`
+- To verify from a relay/mirror:
+
+```bash
+make mirror-verify DATE=$(date -u +%F)
+```
+
+This pulls `GET /checkpoints/artifacts/<DATE>` and compares with `GET /checkpoints/<DATE>/verify`.
+
 ## Logs
 - uvicorn.log (top-level)
 

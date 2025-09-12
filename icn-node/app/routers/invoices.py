@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Optional
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -182,7 +183,7 @@ async def accept_invoice(
     last = (await session.execute(select(AuditLog).order_by(AuditLog.id.desc()).limit(1))).scalar_one_or_none()
     prev_hash = last.row_hash if last else None
 
-    new_status_entry = {"status": "accepted", "by": org.urn}
+    new_status_entry = {"status": "accepted", "by": org.urn, "ts": datetime.now(timezone.utc).isoformat()}
     new_log_payload = {
         "invoice_id": str(inv.id),
         "action": "accept",
@@ -231,7 +232,7 @@ async def dispute_invoice(
     last = (await session.execute(select(AuditLog).order_by(AuditLog.id.desc()).limit(1))).scalar_one_or_none()
     prev_hash = last.row_hash if last else None
 
-    new_status_entry = {"status": "disputed", "by": org.urn, "reason": payload.reason}
+    new_status_entry = {"status": "disputed", "by": org.urn, "reason": payload.reason, "ts": datetime.now(timezone.utc).isoformat()}
     new_log_payload = {
         "invoice_id": str(inv.id),
         "action": "dispute",
@@ -257,5 +258,24 @@ async def dispute_invoice(
     session.add(audit)
     await session.commit()
     return {"id": inv.id, "status": inv.status, "row_hash": row_hash}
+
+
+@router.get("/{invoice_id}/disputes")
+async def list_disputes(invoice_id: int, session: AsyncSession = Depends(get_session)):
+    inv = (await session.execute(select(Invoice).where(Invoice.id == invoice_id))).scalar_one_or_none()
+    if not inv:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    thread = [e for e in (inv.status_history or []) if isinstance(e, dict) and e.get("status") == "disputed"]
+    # Normalize
+    items = [
+        {
+            "by": e.get("by"),
+            "reason": e.get("reason"),
+            "ts": e.get("ts"),
+        }
+        for e in thread
+    ]
+    items.sort(key=lambda x: (x.get("ts") or ""))
+    return {"invoice_id": invoice_id, "items": items}
 
 
