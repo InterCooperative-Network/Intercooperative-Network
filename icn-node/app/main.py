@@ -12,10 +12,20 @@ Notes
 - `POST /checkpoints/generate` is exempted for local demo convenience
 """
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 app = FastAPI(title="ICN Node", version="0.1.0")
+
+# CORS for local demo UI
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 async def health():
