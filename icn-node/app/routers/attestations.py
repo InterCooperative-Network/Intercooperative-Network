@@ -16,6 +16,12 @@ router = APIRouter(prefix="/attestations", tags=["attestations"])
 
 
 class Claim(BaseModel):
+    """A structured assertion with an optional confidence score.
+
+    Examples
+    - quantity_verified: {received: 250, expected: 250}
+    - quality_acceptable: {grade: "A"}
+    """
     claim: str
     value: Any
     confidence: float = 1.0

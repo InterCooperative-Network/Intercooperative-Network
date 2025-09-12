@@ -16,6 +16,13 @@ router = APIRouter(prefix="/invoices", tags=["invoices"])
 
 
 class InvoiceCreate(BaseModel):
+    """Minimal invoice schema for the MVP.
+
+    Notes
+    - `idempotency_key` is passed via header and enforced server-side
+    - `signatures` array is stored as provided to allow multi-party co-sign later
+    - Complex fields are kept as JSON for speed of development (denormalize later)
+    """
     from_org: str
     to_org: str
     lines: list[dict]

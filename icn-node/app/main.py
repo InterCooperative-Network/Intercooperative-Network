@@ -1,9 +1,31 @@
 
+"""
+FastAPI application entry point for the ICN Node (Weekend MVP).
+
+Responsibilities
+- Registers the signature verification middleware for POST/PATCH writes
+- Wires core routers: invoices, attestations, trust, checkpoints
+- Exposes a debug endpoint for verifying audit-chain continuity
+
+Notes
+- Signature middleware enforces `X-Key-Id` (org URN) and `X-Signature` (Ed25519)
+- `POST /checkpoints/generate` is exempted for local demo convenience
+"""
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 app = FastAPI(title="ICN Node", version="0.1.0")
+
+# CORS for local demo UI
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 async def health():

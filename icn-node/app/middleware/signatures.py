@@ -14,9 +14,20 @@ from sqlalchemy import select
 
 class SignatureVerificationMiddleware(BaseHTTPMiddleware):
     """
-    Verifies Ed25519 signature on POST/PATCH requests with JSON bodies.
-    - Uses headers: X-Key-Id (Org urn), X-Signature (base64)
-    - Attaches request.state.org (Org) on success
+    Verify Ed25519 signatures on JSON write requests.
+
+    Security model
+    - Each org has a public key (seeded for the demo) stored in the DB
+    - Writers sign the canonicalized JSON body; the server verifies before processing
+    - Valid requests get `request.state.org` (the signer org) attached for handlers
+
+    Headers
+    - `X-Key-Id`: org URN (e.g., `urn:coop:sunrise-bakery`)
+    - `X-Signature`: base64-encoded Ed25519 signature over the JSON body
+
+    Exemptions
+    - Some dev endpoints (health, docs, debug, checkpoint generation) are exempt to
+      simplify local demos while keeping the default secure-by-default posture.
     """
 
     def __init__(self, app, exempt_paths: set[str] | None = None):

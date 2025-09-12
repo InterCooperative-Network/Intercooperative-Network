@@ -10,7 +10,13 @@ from nacl.exceptions import BadSignatureError
 
 
 def canonicalize_json(obj: Any) -> bytes:
-    """Return deterministic JSON bytes: sorted keys, no spaces, UTF-8."""
+    """Return deterministic JSON bytes: sorted keys, no spaces, UTF-8.
+
+    Why this matters
+    - Signatures must be over a stable representation of the content.
+    - Sorting keys and removing whitespace prevents accidental signature breaks
+      due to formatting or key order differences.
+    """
     return json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
@@ -24,6 +30,8 @@ def compute_hash(data: Any, prev_hash: str | None) -> Tuple[str, str]:
     - payload_hash = sha256(canonicalize_json(data))
     - row_hash = sha256(prev_hash || payload_hash) where prev_hash may be empty string
     Returns (payload_hash, row_hash)
+
+    This creates a simple append-only chain across writes (see PRD §6/§11).
     """
     payload_bytes = canonicalize_json(data)
     payload_hash = sha256_hex(payload_bytes)
