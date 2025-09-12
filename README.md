@@ -2,6 +2,46 @@
 
 Minimal implementation of the Intercooperative Network per PRD v0.3.
 
+## Press Play Demo
+
+```bash
+make demo-up
+# In another terminal (optional UI):
+make web
+```
+
+What just happened
+- Brought up Postgres, applied migrations
+- Seeded 3 demo orgs with keys saved to `.demo/keys/`
+- Created 2 invoices (one later disputed) and printed HTTPie commands
+- You can copy/paste the printed commands or run scripts under `examples/httpie/`
+
+To reset and reseed:
+
+```bash
+make demo-reset
+```
+
+Signing helper
+
+```bash
+make sign FILE=examples/httpie/payloads/invoice_alpha_to_beta.json ORG=urn:coop:alpha-bakery
+```
+
+Run tests
+
+```bash
+make test
+```
+
+Mini web viewer
+
+```bash
+make web
+```
+
+---
+
 ## Quick Start
 
 ```bash

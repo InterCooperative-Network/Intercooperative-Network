@@ -157,3 +157,105 @@ async def get_invoice(invoice_id: int, session: AsyncSession = Depends(get_sessi
     }
 
 
+class InvoiceStatusUpdate(BaseModel):
+    reason: Optional[str] = None
+
+
+@router.post("/{invoice_id}/accept")
+async def accept_invoice(
+    invoice_id: int,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    org: Org = getattr(request.state, "org", None)
+    if not org:
+        raise HTTPException(status_code=401, detail="Signature verification required")
+
+    inv = (await session.execute(select(Invoice).where(Invoice.id == invoice_id))).scalar_one_or_none()
+    if not inv:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    if inv.status == "accepted":
+        return {"id": inv.id, "status": inv.status, "idempotent": True}
+
+    # Compute prev_hash from last AuditLog
+    last = (await session.execute(select(AuditLog).order_by(AuditLog.id.desc()).limit(1))).scalar_one_or_none()
+    prev_hash = last.row_hash if last else None
+
+    new_status_entry = {"status": "accepted", "by": org.urn}
+    new_log_payload = {
+        "invoice_id": str(inv.id),
+        "action": "accept",
+        "by": org.urn,
+        "prev_status": inv.status,
+    }
+    payload_hash, row_hash = compute_hash(new_log_payload, prev_hash)
+
+    inv.status = "accepted"
+    inv.status_history = [*inv.status_history, new_status_entry]
+    session.add(inv)
+
+    audit = AuditLog(
+        prev_hash=prev_hash,
+        row_hash=row_hash,
+        op_type="update",
+        entity_type="invoice",
+        entity_id=str(inv.id),
+        payload_hash=payload_hash,
+        signature=getattr(request.state, "signature_b64", None),
+    )
+    session.add(audit)
+    await session.commit()
+    return {"id": inv.id, "status": inv.status, "row_hash": row_hash}
+
+
+@router.post("/{invoice_id}/dispute")
+async def dispute_invoice(
+    invoice_id: int,
+    payload: InvoiceStatusUpdate,
+    request: Request,
+    session: AsyncSession = Depends(get_session),
+):
+    org: Org = getattr(request.state, "org", None)
+    if not org:
+        raise HTTPException(status_code=401, detail="Signature verification required")
+
+    inv = (await session.execute(select(Invoice).where(Invoice.id == invoice_id))).scalar_one_or_none()
+    if not inv:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    if inv.status == "disputed":
+        return {"id": inv.id, "status": inv.status, "idempotent": True}
+
+    # Compute prev_hash from last AuditLog
+    last = (await session.execute(select(AuditLog).order_by(AuditLog.id.desc()).limit(1))).scalar_one_or_none()
+    prev_hash = last.row_hash if last else None
+
+    new_status_entry = {"status": "disputed", "by": org.urn, "reason": payload.reason}
+    new_log_payload = {
+        "invoice_id": str(inv.id),
+        "action": "dispute",
+        "by": org.urn,
+        "reason": payload.reason or "",
+        "prev_status": inv.status,
+    }
+    payload_hash, row_hash = compute_hash(new_log_payload, prev_hash)
+
+    inv.status = "disputed"
+    inv.status_history = [*inv.status_history, new_status_entry]
+    session.add(inv)
+
+    audit = AuditLog(
+        prev_hash=prev_hash,
+        row_hash=row_hash,
+        op_type="update",
+        entity_type="invoice",
+        entity_id=str(inv.id),
+        payload_hash=payload_hash,
+        signature=getattr(request.state, "signature_b64", None),
+    )
+    session.add(audit)
+    await session.commit()
+    return {"id": inv.id, "status": inv.status, "row_hash": row_hash}
+
+

@@ -1,0 +1,10 @@
+{
+  "subject_type": "invoice",
+  "subject_id": "1",
+  "claims": [
+    { "claim": "quantity_verified", "value": { "received": 200, "expected": 200 }, "confidence": 1.0 }
+  ],
+  "weight": 1.0
+}
+
+

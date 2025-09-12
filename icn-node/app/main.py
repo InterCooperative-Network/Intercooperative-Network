@@ -38,13 +38,19 @@ from .routers.attestations import router as attestations_router
 from .routers.trust import router as trust_router
 from .routers.checkpoints import router as checkpoints_router
 from .db import get_session
-from .models import AuditLog
+from .models import AuditLog, Invoice, Attestation
+from .utils.crypto import canonicalize_json
 
 app.add_middleware(SignatureVerificationMiddleware)
 app.include_router(invoices_router)
 app.include_router(attestations_router)
 app.include_router(trust_router)
 app.include_router(checkpoints_router)
+
+@app.get("/env/demo")
+async def env_demo():
+    """Expose base URL hint for the web viewer and scripts."""
+    return {"base_url": "http://localhost:8000"}
 
 
 @app.get("/debug/audit-log")
@@ -58,8 +64,48 @@ async def debug_audit_log(session: AsyncSession = Depends(get_session)):
             chain_ok = False
             break
         prev = a
+    last_rows = []
+    # Build last 5 entries with small payload preview when possible
+    tail = items[-5:]
+    for a in tail:
+        preview = None
+        if a.entity_type == "invoice":
+            inv = (
+                await session.execute(select(Invoice).where(Invoice.id == int(a.entity_id)))
+            ).scalar_one_or_none()
+            if inv:
+                payload = {
+                    "from_org_id": inv.from_org_id,
+                    "to_org_id": inv.to_org_id,
+                    "total": inv.total,
+                    "status": inv.status,
+                }
+                preview = canonicalize_json(payload).decode("utf-8")[:100]
+        elif a.entity_type == "attestation":
+            att = (
+                await session.execute(select(Attestation).where(Attestation.id == int(a.entity_id)))
+            ).scalar_one_or_none()
+            if att:
+                payload = {
+                    "subject_type": att.subject_type,
+                    "subject_id": att.subject_id,
+                    "weight": att.weight,
+                }
+                preview = canonicalize_json(payload).decode("utf-8")[:100]
+        last_rows.append({
+            "ts": a.timestamp.isoformat(),
+            "row_hash": a.row_hash,
+            "op": a.op_type,
+            "entity": f"{a.entity_type}:{a.entity_id}",
+            "payload_preview": preview,
+        })
+    continuity = None
+    if items:
+        continuity = f"{items[0].prev_hash or ''} -> ... -> {items[-1].row_hash}"
     return {
         "count": len(items),
         "chain_ok": chain_ok,
         "head": items[-1].row_hash if items else None,
+        "last_rows": last_rows,
+        "continuity": continuity,
     }

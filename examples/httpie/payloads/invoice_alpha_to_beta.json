@@ -1,0 +1,10 @@
+{
+  "from_org": "urn:coop:alpha-bakery",
+  "to_org": "urn:coop:beta-housing",
+  "lines": [{ "sku": "bread", "qty": 200, "unit": "loaf", "unit_price": 3.0 }],
+  "total": 600.0,
+  "terms": { "due_net_days": 30 },
+  "signatures": []
+}
+
+

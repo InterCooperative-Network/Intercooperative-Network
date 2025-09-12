@@ -55,6 +55,7 @@ export default function App() {
   const [checkpointResult, setCheckpointResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [copyCurl, setCopyCurl] = useState('')
 
   const demoInvoices = useMemo(
     () => [
@@ -115,11 +116,47 @@ export default function App() {
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       await listInvoices()
+      setCopyCurl(`http POST ${apiBase}/invoices Idempotency-Key:${randomIdemKey()} X-Key-Id:${keyId} X-Signature:${signatureB64} < <(cat <<'JSON'\n${JSON.stringify(payload, null, 2)}\nJSON\n)`) 
     } catch (e) {
       setError(String(e.message || e))
     } finally {
       setLoading(false)
     }
+  }
+
+  async function acceptInvoice(id) {
+    setError('')
+    setLoading(true)
+    try {
+      const body = {}
+      const canon = canonicalJSONStringify(body)
+      const { signatureB64 } = await signPayload(canon, privateKeyB64)
+      const res = await fetch(`${apiBase}/invoices/${id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Key-Id': keyId, 'X-Signature': signatureB64 },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      await listInvoices()
+      setCopyCurl(`http POST ${apiBase}/invoices/${id}/accept X-Key-Id:${keyId} X-Signature:${signatureB64} < <(echo '{}')`)
+    } catch (e) { setError(String(e.message || e)) } finally { setLoading(false) }
+  }
+
+  async function postAttestation(invoiceId) {
+    setError('')
+    setLoading(true)
+    try {
+      const payload = { subject_type: 'invoice', subject_id: String(invoiceId), claims: [{ claim: 'quantity_verified', value: { received: 200, expected: 200 }, confidence: 1.0 }], weight: 1.0 }
+      const canon = canonicalJSONStringify(payload)
+      const { signatureB64 } = await signPayload(canon, privateKeyB64)
+      const res = await fetch(`${apiBase}/attestations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Key-Id': keyId, 'X-Signature': signatureB64 },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setCopyCurl(`http POST ${apiBase}/attestations X-Key-Id:${keyId} X-Signature:${signatureB64} < <(cat <<'JSON'\n${JSON.stringify(payload, null, 2)}\nJSON\n)`) 
+    } catch (e) { setError(String(e.message || e)) } finally { setLoading(false) }
   }
 
   async function queryTrust() {
@@ -212,7 +249,15 @@ export default function App() {
                   <td>{i.from_org || i.from_org_id}</td>
                   <td>{i.to_org || i.to_org_id}</td>
                   <td>{i.total}</td>
-                  <td><span className={`badge badge-${i.status}`}>{i.status}</span></td>
+                  <td>
+                    <span className={`badge badge-${i.status}`}>{i.status}</span>
+                    {mode==='live' ? (
+                      <>
+                        <button style={{ marginLeft: 8 }} onClick={() => acceptInvoice(i.id)}>Accept</button>
+                        <button style={{ marginLeft: 8 }} onClick={() => postAttestation(i.id)}>Attest</button>
+                      </>
+                    ) : null}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -247,6 +292,10 @@ export default function App() {
               <div><b>Merkle root:</b> {checkpointResult.merkle_root}</div>
             </div>
           ) : null}
+        </Section>
+
+        <Section title="Copy curl for last action">
+          <pre style={{ whiteSpace: 'pre-wrap' }}>{copyCurl}</pre>
         </Section>
       </main>
 

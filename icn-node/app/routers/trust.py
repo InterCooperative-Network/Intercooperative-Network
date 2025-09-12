@@ -67,14 +67,40 @@ async def trust_score(
             vals.append((sum(confidences) / max(1, len(confidences))) * time_decay(arow.created_at) * arow.weight)
         attest = min(1.0, sum(vals) / max(1, len(vals)))
 
-    disputes = 0.0
-    network = 0.0
+    # Disputes factor: recent disputes lower trust. Treat any invoice with status disputed as 0.3 value
+    disputed_count = sum(1 for i in invs if i.status == "disputed")
+    disputes_value = 0.3 if disputed_count > 0 else 1.0
 
-    score = 0.4 * direct + 0.2 * attest + 0.2 * (1 - disputes) + 0.2 * network
-    confidence = "low" if len(invs) + len(att) < 2 else ("medium" if len(invs) + len(att) < 5 else "high")
-    result = {"score": round(score, 4), "confidence": confidence}
+    # Compose weighted score with explainability
+    weights = {
+        "payment_history_decay": 0.4,
+        "third_party_attestations": 0.3,
+        "disputes_recent": 0.3,
+    }
+    factors = {
+        "payment_history_decay": max(0.0, min(1.0, direct)),
+        "third_party_attestations": max(0.0, min(1.0, attest)),
+        "disputes_recent": max(0.0, min(1.0, disputes_value if disputed_count == 0 else 0.3)),
+    }
+    score = (
+        weights["payment_history_decay"] * factors["payment_history_decay"]
+        + weights["third_party_attestations"] * factors["third_party_attestations"]
+        + weights["disputes_recent"] * factors["disputes_recent"]
+    )
+
+    # Confidence as a 0..1 in addition to string for backward compat
+    samples = len(invs) + len(att)
+    confidence_f = 0.25 if samples < 2 else (0.6 if samples < 5 else 0.85)
+    confidence_label = "low" if confidence_f < 0.4 else ("medium" if confidence_f < 0.8 else "high")
+
+    result = {"score": round(score * 100), "confidence": round(confidence_f, 2)}
     if include_factors:
-        result["factors"] = {"direct": round(direct, 4), "attestations": round(attest, 4), "disputes": disputes, "network": network}
+        result["factors"] = [
+            {"factor": k, "value": round(factors[k], 2), "weight": weights[k]} for k in [
+                "payment_history_decay", "third_party_attestations", "disputes_recent"
+            ]
+        ]
+        result["explanation"] = "Time-weighted history plus attestations, minus recent disputes"
     return result
 
 

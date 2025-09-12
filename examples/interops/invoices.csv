@@ -1,0 +1,6 @@
+from_org,to_org,sku,qty,unit,unit_price,total,due_net_days
+urn:coop:alpha-bakery,urn:coop:beta-housing,bread,100,loaf,3.0,300.0,30
+urn:coop:beta-housing,urn:coop:alpha-bakery,repair,1,job,400.0,400.0,15
+urn:coop:alpha-bakery,urn:coop:gamma-audit,consulting,2,hour,120.0,240.0,30
+
+

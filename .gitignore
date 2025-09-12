@@ -53,3 +53,6 @@ uvicorn.pid
 icn-node/demo_keys.json
 icn-node/venv/
 
+# Demo artifacts
+.demo/
+
